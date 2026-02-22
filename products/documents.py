@@ -8,14 +8,10 @@ autocomplete_analyzer = analyzer(
     tokenizer='standard',
     filter=[
         'lowercase',
-        token_filter(
-            'autocomplete_filter',
-            'edge_ngram',
-            min_gram=1,
-            max_gram=20
-        )
+        token_filter('autocomplete_filter', 'edge_ngram', min_gram=1, max_gram=20)
     ]
 )
+
 
 @registry.register_document
 class ProductDocument(Document):
@@ -26,8 +22,20 @@ class ProductDocument(Document):
             'autocomplete': fields.TextField(analyzer=autocomplete_analyzer),
         }
     )
-    brand = fields.TextField(attr='brand')
-    price = fields.FloatField(attr='price')
+    brand = fields.TextField(
+        attr='brand',
+        fields={
+            'raw': fields.TextField(analyzer='keyword'),
+            'autocomplete': fields.TextField(analyzer=autocomplete_analyzer),
+        }
+    )
+    price = fields.TextField(
+        attr='price',
+        fields={
+            'raw': fields.DoubleField(),
+            'autocomplete': fields.TextField(analyzer=autocomplete_analyzer),
+        }
+    )
 
     class Index:
         name = 'products'
@@ -35,7 +43,7 @@ class ProductDocument(Document):
             'number_of_shards': 1,
             'number_of_replicas': 0
         }
-    
+
     class Django:
         model = Product
         fields = []

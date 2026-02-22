@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from products.models import Product
 from products.serializers import ProductSerializer
 from elasticsearch import Elasticsearch
 from django.shortcuts import render
@@ -23,8 +22,7 @@ class ProductSearchView(APIView):
                     "query": query,
                     "fields": [
                         "name",
-                        "name.autocomplete",
-                        "brand"
+                        "name.autocomplete"
                     ],
                     "fuzziness": "AUTO"
                 }
@@ -35,17 +33,19 @@ class ProductSearchView(APIView):
                 }
             }
         }
-        response = es.search(index="products", body=search_body)
+        response = es.search(index="products", body=search_body, size=100)
         hits = response['hits']['hits']
         products = []
         for hit in hits:
             product = hit['_source']
+            product['id'] = hit['_id']
             if 'highlight' in hit and 'name' in hit['highlight']:
                 product['name_highlighted'] = hit['highlight']['name'][0]
             else:
                 product['name_highlighted'] = product['name']
+
             products.append(product)
-        
+
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
 
